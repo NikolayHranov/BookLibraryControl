@@ -7,7 +7,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -18,11 +24,13 @@ import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.table.JTableHeader;
 
 // import org.w3c.dom.events.MouseEvent;
 
-class MainFrame extends JFrame implements ActionListener, MouseListener, ListSelectionListener  {
+class MainFrame extends JFrame implements ActionListener, MouseListener, ListSelectionListener, TableModelListener {
     // new Color(30, 30, 30)
     // new Color(255, 255, 255)
     // new Color(48, 50, 51)
@@ -34,6 +42,9 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
     JButton addButton;
     JButton editButton;
     JButton deleteButton;
+    JButton loadButton;
+    JButton saveButton;
+
     JTable table;
 
     int selectedRow;
@@ -87,6 +98,7 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
         addButton.addActionListener(this);
         // addButton.setSize(30, 30);
 
+
         editButton = new JButton("Edit");
         editButton.setFont(new Font("Calibri", Font.PLAIN, 20));
         editButton.addActionListener(this);
@@ -99,9 +111,21 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
         deleteButton.setEnabled(false);
 
 
+        loadButton = new JButton("Load");
+        loadButton.setFont(new Font("Calibri", Font.PLAIN, 20));
+        loadButton.addActionListener(this);
+
+
+        saveButton = new JButton("Save");
+        saveButton.setFont(new Font("Calibri", Font.PLAIN, 20));
+        saveButton.addActionListener(this);
+
+
         toolBar.add(addButton);
         toolBar.add(editButton);
         toolBar.add(deleteButton);
+        toolBar.add(loadButton);
+        toolBar.add(saveButton);
         // toolBar.setPreferredSize(new Dimension(100, 100));
 
         table = new JTable(Main.tableModel);
@@ -118,6 +142,7 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
         table.setRowHeight(26);
         table.addMouseListener(this);
         table.getSelectionModel().addListSelectionListener(this);
+        table.getModel().addTableModelListener(this);
         table.setDefaultEditor(Object.class, new CustomCellEditor());
 
 
@@ -128,6 +153,61 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
         mainPanel.add(scrollPane, BorderLayout.CENTER);
     }
 
+
+    public void saveLibraryToCSV(File file) {
+        try (PrintWriter pw = new PrintWriter(file)) {
+            for (Book book : Main.library.getBooks()) {
+                String line = String.format("%s,%s,%s",
+                        book.getIsbn(),
+                        book.getTitle().replace(",", "\\,"),
+                        book.getAuthor().replace(",", "\\,"));
+                pw.println(line);
+            }
+            System.out.println("Library saved to " + file.getAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error saving file: " + e.getMessage());
+        }
+    }
+
+
+    public void loadLibraryFromCSV(File file) {
+        Main.library.clear();
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split("(?<!\\\\),", -1);
+                if (parts.length >= 3) {
+                    String isbn = parts[0].trim();
+                    String title = parts[1].replace("\\,", ",").trim();
+                    String author = parts[2].replace("\\,", ",").trim();
+                    Main.library.addBook(new Book(isbn, title, author));
+                }
+            }
+            refreshTableFromLibrary();
+            System.out.println("Library loaded from " + file.getAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error loading file: " + e.getMessage());
+        }
+    }
+
+
+    private void refreshTableFromLibrary() {
+        Main.tableModel.setRowCount(0);
+
+        for (Book book : Main.library.getBooks()) {
+            Object[] rowData = {
+                book.getIsbn(),
+                book.getTitle(),
+                book.getAuthor()
+            };
+            Main.tableModel.addRow(rowData);
+        }
+    }
+
+
+
     @Override
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == addButton || e.getSource() == editButton) {
@@ -135,14 +215,12 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
             JTextField titleField = new JTextField(20);
             JTextField authorField = new JTextField(20);
 
-            // Arrange components in an array
             Object[] message = {
                 "ISBN:", isbnField,
                 "Title:", titleField,
                 "Author:", authorField
             };
 
-            // Show dialog
             int option = JOptionPane.showConfirmDialog(null, message, "Enter Book Details", JOptionPane.OK_CANCEL_OPTION);
             if (option == JOptionPane.OK_OPTION) {
                 String isbn = isbnField.getText();
@@ -155,14 +233,56 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
 
                 if (e.getSource() == addButton) {
                     Main.tableModel.addRow(new String[] {isbn, title, author});
+                    Main.library.addBook(new Book(isbn, title, author));
                 } else if (e.getSource() == editButton) {
+
+                    table.getModel().removeTableModelListener(this);
+
                     Main.tableModel.setValueAt(isbn, selectedRow, 0);
                     Main.tableModel.setValueAt(title, selectedRow, 1);
                     Main.tableModel.setValueAt(author, selectedRow, 2);
+
+                    Main.library.editBook(selectedRow, new Book(isbn, title, author));
+
+                    table.getModel().addTableModelListener(this);
                 }
             }
         } else if (e.getSource() == deleteButton) {
             Main.tableModel.removeRow(selectedRow);
+            Main.library.removeBook(selectedRow);
+        } else if (e.getSource() == saveButton) {
+            JFileChooser fileChooser = new JFileChooser();
+            int result = fileChooser.showSaveDialog(this);
+
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File file = fileChooser.getSelectedFile();
+                saveLibraryToCSV(file);
+            }
+        } else if (e.getSource() == loadButton) {
+            JFileChooser fileChooser = new JFileChooser();
+            int result = fileChooser.showOpenDialog(this);
+
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File file = fileChooser.getSelectedFile();
+                loadLibraryFromCSV(file);
+            }
+        }
+    }
+
+    @Override
+    public void tableChanged(TableModelEvent e) {
+        if (e.getType() == TableModelEvent.UPDATE) {
+            int row = e.getFirstRow();
+            int column = e.getColumn();
+
+            if (column == TableModelEvent.ALL_COLUMNS) return;
+
+            String isbn = (String) Main.tableModel.getValueAt(row, 0);
+            String title = (String) Main.tableModel.getValueAt(row, 1);
+            String author = (String) Main.tableModel.getValueAt(row, 2);
+
+            Book updatedBook = new Book(isbn, title, author);
+            Main.library.editBook(row, updatedBook);
         }
     }
 
@@ -186,7 +306,6 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
         }
     }
 
-    // You must override all MouseListener methods (even empty)
     @Override 
     public void mousePressed(MouseEvent e) {
         
