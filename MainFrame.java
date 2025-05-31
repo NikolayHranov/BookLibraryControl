@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -44,6 +45,8 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
     JButton deleteButton;
     JButton loadButton;
     JButton saveButton;
+    JButton searchButton;
+    JTextField searchField;
 
     JTable table;
 
@@ -120,12 +123,19 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
         saveButton.setFont(new Font("Calibri", Font.PLAIN, 20));
         saveButton.addActionListener(this);
 
+        searchField = new JTextField(30);
+        searchButton = new JButton("Search");
+        searchButton.setFont(new Font("Calibri", Font.PLAIN, 20));
+        searchButton.addActionListener(this);
+
 
         toolBar.add(addButton);
         toolBar.add(editButton);
         toolBar.add(deleteButton);
         toolBar.add(loadButton);
         toolBar.add(saveButton);
+        toolBar.add(searchField);
+        toolBar.add(searchButton);
         // toolBar.setPreferredSize(new Dimension(100, 100));
 
         table = new JTable(Main.tableModel);
@@ -207,6 +217,19 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
     }
 
 
+    public void refreshTableFromArray(ArrayList<Book> books) {
+        Main.tableModel.setRowCount(0);
+
+        for (Book book : books) {
+            Object[] rowData = {
+                book.getIsbn(),
+                book.getTitle(),
+                book.getAuthor()
+            };
+            Main.tableModel.addRow(rowData);
+        }
+    }
+
 
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -266,6 +289,10 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
                 File file = fileChooser.getSelectedFile();
                 loadLibraryFromCSV(file);
             }
+        } else if (e.getSource() == searchButton) {
+            String input = searchField.getText();
+            ArrayList<Book> searchedBooks = Main.library.searchBooks(input);
+            refreshTableFromArray(searchedBooks);
         }
     }
 

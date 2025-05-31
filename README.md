@@ -20,6 +20,17 @@ To edit the data for a book you can click (select) the row you want to edit and 
 #### ❌ Delete
 To delete a book you can click (select) the row you want to delete and than click the `Delete` button.
 
+#### 💾 Save
+To save your data to CSV file you can use the `Save` button and than choose the location where you want to save it.
+
+#### 📂 Load
+To load data from a CSV file you can use the `Load` buttom and than select the file you want to open.
+
+#### 🔍 Search
+To search for a book, type part of the title, author, or ISBN into the search box and click the `Search` button.
+
+You can also use the prefixes `isbn: `, `title: `, or `author: ` before your search term to search specifically by ISBN, title, or author.
+
 ## 📁 Repository
 To run the project:
 1. Clone the repository.
