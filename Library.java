@@ -1,8 +1,7 @@
-import java.util.ArrayList;
 
 public class Library {
 
-    private ArrayList<Book> books = new ArrayList<>();
+    private CustomArrayList<Book> books = new CustomArrayList<>();
 
     public void addBook(Book book) {
         books.add(book);
@@ -24,12 +23,12 @@ public class Library {
         return books.get(index);
     }
 
-    public ArrayList<Book> getBooks() {
+    public CustomArrayList<Book> getBooks() {
         return books;
     }
 
-    public ArrayList<Book> searchBooks(String query) {
-        ArrayList<Book> searchedBooks = new ArrayList<>();
+    public CustomArrayList<Book> searchBooks(String query) {
+        CustomArrayList<Book> searchedBooks = new CustomArrayList<>();
         String[] prefixes = {"isbn: ", "title: ", "author: "};
         String prefix = "";
 

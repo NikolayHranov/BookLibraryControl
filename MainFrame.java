@@ -12,8 +12,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -47,6 +47,8 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
     JButton saveButton;
     JButton searchButton;
     JTextField searchField;
+    JButton sortButton;
+    JComboBox<String> sortComboBox;
 
     JTable table;
 
@@ -128,6 +130,13 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
         searchButton.setFont(new Font("Calibri", Font.PLAIN, 20));
         searchButton.addActionListener(this);
 
+        sortButton = new JButton("Sort");
+        sortButton.setFont(new Font("Calibri", Font.PLAIN, 20));
+        sortButton.addActionListener(this);
+
+        String[] options = {"Title", "Author", "ISBN"};
+        sortComboBox = new JComboBox<>(options);
+
 
         toolBar.add(addButton);
         toolBar.add(editButton);
@@ -137,6 +146,9 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
         toolBar.add(searchField);
         toolBar.add(searchButton);
         // toolBar.setPreferredSize(new Dimension(100, 100));
+
+        toolBar.add(sortComboBox);
+        toolBar.add(sortButton);
 
         table = new JTable(Main.tableModel);
         JScrollPane scrollPane = new JScrollPane(table);
@@ -217,7 +229,7 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
     }
 
 
-    public void refreshTableFromArray(ArrayList<Book> books) {
+    public void refreshTableFromArray(CustomArrayList<Book> books) {
         Main.tableModel.setRowCount(0);
 
         for (Book book : books) {
@@ -251,6 +263,9 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
                 String author = authorField.getText();
                 if (isbn.trim().isEmpty() || title.trim().isEmpty() || author.trim().isEmpty()) {
                     JOptionPane.showMessageDialog(null, "Cell cannot be empty!", "Input Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                } else if (!Main.isValidISBN(isbn)) {
+                    JOptionPane.showMessageDialog(null, "Invalid ISBN!", "Input Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
@@ -291,8 +306,38 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
             }
         } else if (e.getSource() == searchButton) {
             String input = searchField.getText();
-            ArrayList<Book> searchedBooks = Main.library.searchBooks(input);
+            CustomArrayList<Book> searchedBooks = Main.library.searchBooks(input);
             refreshTableFromArray(searchedBooks);
+        } else if (e.getSource() == sortButton) {
+
+            String selected = (String) sortComboBox.getSelectedItem();
+
+            CustomArrayList<Book> sortedBooks = new CustomArrayList<>();
+            for (Book book : Main.library.getBooks()) {
+                sortedBooks.add(book);
+            }
+
+            CustomArrayList.mergeSort(sortedBooks, selected.toLowerCase());
+            refreshTableFromArray(sortedBooks);
+
+            // String selectedOption = (String) sortComboBox.getSelectedItem();
+
+            // Comparator<Book> comparator = switch (selectedOption) {
+            //     case "Title" -> (b1, b2) -> b1.getTitle().compareToIgnoreCase(b2.getTitle());
+            //     case "Author" -> (b1, b2) -> b1.getAuthor().compareToIgnoreCase(b2.getAuthor());
+            //     case "ISBN" -> (b1, b2) -> b1.getIsbn().compareToIgnoreCase(b2.getIsbn());
+            //     default -> null;
+            // };
+
+            // if (comparator != null) {
+            //     CustomArrayList<Book> books = new CustomArrayList<>();
+            //     books.addAll(Main.library.getBooks()); // Assuming library.getBooks() returns a List<Book>
+            //     books.sort(comparator);
+
+            //     Main.library.setBooks(books); // Replace library books with sorted ones
+            //     refreshTableFromLibrary(); // Your method to update JTable
+            // }
+            
         }
     }
 
@@ -330,7 +375,7 @@ class MainFrame extends JFrame implements ActionListener, MouseListener, ListSel
         // System.out.println(row);
         if (row >= 0) {
             // System.out.println("Row clicked: " + row);
-        }
+        };
     }
 
     @Override 

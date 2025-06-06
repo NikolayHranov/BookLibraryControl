@@ -31,6 +31,10 @@ To search for a book, type part of the title, author, or ISBN into the search bo
 
 You can also use the prefixes `isbn: `, `title: `, or `author: ` before your search term to search specifically by ISBN, title, or author.
 
+#### 📊 Sort
+
+You can choose on what to sort from the drop down menu and than click the `Sort` button to sort the books.
+
 ## 📁 Repository
 To run the project:
 1. Clone the repository.
